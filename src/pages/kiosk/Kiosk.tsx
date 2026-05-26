@@ -22,7 +22,7 @@ export function Kiosk() {
   const [holiday,  setHoliday] = useState<Holiday | null>(null)
   const dismissRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const rfidBuf     = useRef('')
-  const rfidTimer   = useRef<ReturnType<typeof setTimeout>>()
+  const rfidTimer   = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const phaseRef    = useRef<Phase>({ kind: 'idle' })
   const holidayRef  = useRef<Holiday | null>(null)
   const company     = getCompanySettings()

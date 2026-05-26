@@ -113,19 +113,6 @@ function KPICard({
   )
 }
 
-/* ── Custom donut label ──────────────────────────────────────────────────── */
-function DonutCenter({ cx, cy, total }: { cx?: number; cy?: number; total: number }) {
-  return (
-    <g>
-      <text x={cx} y={(cy ?? 0) - 6} textAnchor="middle" style={{ fontSize: 22, fontWeight: 800, fill: '#111827', letterSpacing: '-0.04em' }}>
-        {total}
-      </text>
-      <text x={cx} y={(cy ?? 0) + 12} textAnchor="middle" style={{ fontSize: 10, fill: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-        Total
-      </text>
-    </g>
-  )
-}
 
 /* ── Quick action button ─────────────────────────────────────────────────── */
 function QuickAction({ icon: Icon, label, color, onClick }: {

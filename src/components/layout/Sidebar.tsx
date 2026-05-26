@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Clock, Calendar,
   Umbrella, Timer, BarChart2, Settings, LogOut, ChevronDown,
-  Shield, Monitor, ChevronLeft, Banknote,
+  Shield, Monitor, Banknote,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
