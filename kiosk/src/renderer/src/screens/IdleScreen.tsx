@@ -23,7 +23,7 @@ export function IdleScreen({ onPINMode, onRFIDMode }: IdleScreenProps) {
       transition={{ duration: 0.4 }}
       className="h-screen w-screen flex overflow-hidden"
       style={{
-        background: 'radial-gradient(ellipse at 20% 50%, #1e1b4b 0%, #0f0f23 60%, #0F172A 100%)',
+        background: 'radial-gradient(ellipse at 20% 50%, #450a0a 0%, #1a0505 60%, #0F172A 100%)',
       }}
     >
       {/* ── Left panel: clock + CTA ─────────────────────────────────────── */}
@@ -31,7 +31,23 @@ export function IdleScreen({ onPINMode, onRFIDMode }: IdleScreenProps) {
 
         {/* Logo + brand */}
         <div className="flex flex-col items-center gap-3">
-          <img src="/Veltrix.png" alt="Veltrix" className="h-12 opacity-90" onError={e => (e.currentTarget.style.display='none')} />
+          <div style={{
+            width: 56, height: 56, borderRadius: 16,
+            background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 8px 32px rgba(220,38,38,0.4)',
+          }}>
+            {/* Fallback if logo image not present */}
+            <img
+              src="/TenPayroll.png"
+              alt="TenPayroll"
+              style={{ width: 36, height: 36, objectFit: 'contain' }}
+              onError={e => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none'
+              }}
+            />
+          </div>
+          <p style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em' }}>TenPayroll</p>
           <p className="text-slate-400 text-sm tracking-widest uppercase font-medium">Attendance Kiosk</p>
         </div>
 
@@ -53,7 +69,12 @@ export function IdleScreen({ onPINMode, onRFIDMode }: IdleScreenProps) {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={onPINMode}
-            className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors border border-indigo-400/30 shadow-lg shadow-indigo-900/50"
+            className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl text-white font-semibold text-sm transition-colors shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
+              border: '1px solid rgba(220,38,38,0.4)',
+              boxShadow: '0 8px 24px rgba(220,38,38,0.35)',
+            }}
           >
             <Fingerprint size={32} strokeWidth={1.5} />
             Enter PIN
@@ -63,7 +84,12 @@ export function IdleScreen({ onPINMode, onRFIDMode }: IdleScreenProps) {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={onRFIDMode}
-            className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl glass hover:bg-white/12 text-white font-semibold text-sm transition-colors shadow-lg"
+            className="flex flex-col items-center gap-3 px-8 py-6 rounded-2xl text-white font-semibold text-sm transition-colors shadow-lg"
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)',
+            }}
           >
             <CreditCard size={32} strokeWidth={1.5} />
             Scan Card
@@ -75,13 +101,14 @@ export function IdleScreen({ onPINMode, onRFIDMode }: IdleScreenProps) {
       </div>
 
       {/* ── Right panel: recent check-ins ───────────────────────────────── */}
-      <div className="w-80 flex flex-col border-l border-white/8 bg-black/20">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+      <div className="w-80 flex flex-col" style={{ borderLeft: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recent</h2>
           <button
             onClick={handleRefresh}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors"
-            title="Refresh employee list"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-colors"
+            style={{ background: 'transparent' }}
+            title="Refresh employee list from server"
           >
             <RefreshCw size={14} />
           </button>

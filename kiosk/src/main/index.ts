@@ -81,6 +81,7 @@ ipcMain.handle('kiosk:pin-checkin', async (_, pin: string) => {
       employee_no:  employee.employee_no,
       full_name:    employee.full_name,
       department:   employee.department,
+      shift_id:     employee.shift_id,
       date:         today,
       now,
     })
@@ -113,6 +114,7 @@ ipcMain.handle('kiosk:rfid-checkin', async (_, rfid: string) => {
       employee_no: employee.employee_no,
       full_name:   employee.full_name,
       department:  employee.department,
+      shift_id:    employee.shift_id,
       date:        today,
       now,
     })

@@ -1,15 +1,16 @@
 {
-  "name": "veltrix-kiosk",
+  "name": "tenpayroll-kiosk",
   "version": "1.0.0",
-  "description": "Veltrix HR — Offline-capable attendance kiosk (Electron)",
+  "description": "TenPayroll — Offline-capable attendance kiosk (Electron + SQLite + Supabase sync)",
   "main": "dist-electron/main/index.js",
   "scripts": {
-    "dev":   "electron-vite dev",
-    "build": "electron-vite build",
-    "pack":  "npm run build && electron-builder",
+    "dev":     "electron-vite dev",
+    "build":   "electron-vite build",
+    "pack":    "npm run build && electron-builder",
     "preview": "electron-vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "better-sqlite3": "^9.4.3",
     "electron-updater": "^6.1.7",
     "uuid": "^11.0.0"
@@ -23,22 +24,22 @@
     "@types/react-dom": "^19.0.0",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.0",
     "electron": "^31.0.0",
     "electron-builder": "^24.9.1",
-    "electron-vite": "^2.3.0",
+    "electron-vite": "^5.0.0",
     "framer-motion": "^12.0.0",
     "lucide-react": "^0.525.0",
+    "postcss": "^8.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^3.4.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
     "typescript": "~5.6.0",
     "vite": "^6.0.0"
   },
   "build": {
-    "appId": "app.veltrix.kiosk",
-    "productName": "Veltrix Kiosk",
+    "appId": "app.tenpayroll.kiosk",
+    "productName": "TenPayroll Kiosk",
     "directories": { "buildResources": "resources" },
     "win": {
       "target": "nsis",

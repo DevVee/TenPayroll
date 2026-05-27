@@ -1,56 +1,64 @@
-// ─── Sync Engine ─────────────────────────────────────────────────────────────
-// Runs in Electron main process. Periodically flushes the attendance queue
-// to the remote server and refreshes the employee cache.
-import { getPendingRecords, markSynced, markFailed, replaceEmployeeCache, getPendingCount, getConfig } from '../db'
+// ─── Sync Engine — talks directly to Supabase (no custom server needed) ────────
+// Runs in Electron main process. Flushes the local SQLite attendance_queue to
+// Supabase every 30 s when online, and refreshes the employee + shift caches.
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import {
+  getPendingRecords, markSynced, markFailed,
+  replaceEmployeeCache, replaceShiftsCache,
+  getPendingCount,
+  type CachedEmployee, type CachedShift,
+} from '../db'
 
-const SYNC_INTERVAL_MS   = 30_000   // 30 s normal cadence
-const RETRY_DELAY_MS     = 5_000    // 5 s after a failed nudge
-const HEALTH_URL_SUFFIX  = '/api/health'
-const EMPLOYEES_URL_SUFFIX = '/api/employees/cache'
-const ATTENDANCE_URL_SUFFIX = '/api/attendance/batch'
+// Injected at build time by electron.vite.config.ts define block.
+declare const __SUPABASE_URL__:      string
+declare const __SUPABASE_ANON_KEY__: string
+
+const SYNC_INTERVAL_MS = 30_000   // normal cadence
+const RETRY_DELAY_MS   = 5_000    // after offline/error cycle
 
 export interface SyncStatus {
-  online: boolean
-  pending: number
-  state: 'idle' | 'syncing' | 'error' | 'offline' | 'unknown'
-  lastSync: string | null
+  online:    boolean
+  pending:   number
+  state:     'idle' | 'syncing' | 'error' | 'offline' | 'unknown'
+  lastSync:  string | null
   lastError: string | null
 }
 
 export class SyncEngine {
-  private timer: NodeJS.Timeout | null = null
-  private _online = false
-  private _state: SyncStatus['state'] = 'idle'
-  private _lastSync: string | null = null
+  private timer:      NodeJS.Timeout | null = null
+  private _client:    SupabaseClient | null = null
+  private _online     = false
+  private _state:     SyncStatus['state'] = 'idle'
+  private _lastSync:  string | null = null
   private _lastError: string | null = null
-  private _running = false
+  private _running    = false
 
-  // ── helpers ──────────────────────────────────────────────────────────────
-  private get baseUrl(): string {
-    return getConfig('server_url') ?? 'http://localhost:3000'
-  }
+  constructor() {
+    const url = __SUPABASE_URL__
+    const key = __SUPABASE_ANON_KEY__
 
-  private get apiKey(): string {
-    return getConfig('api_key') ?? ''
-  }
-
-  private get deviceId(): string {
-    return getConfig('device_id') ?? 'unknown'
-  }
-
-  private headers() {
-    return {
-      'Content-Type': 'application/json',
-      'x-device-id': this.deviceId,
-      'x-api-key': this.apiKey,
+    if (!url || !key) {
+      console.warn('[SyncEngine] SUPABASE_URL / SUPABASE_ANON_KEY not set — sync disabled.')
+      return
     }
+
+    // Create a Supabase client for the main process (Node.js).
+    // auth.persistSession: false → no localStorage dependency (Node.js has none).
+    // We only use the anon key for table operations — no auth.signIn needed.
+    this._client = createClient(url, key, {
+      auth: {
+        persistSession:    false,
+        autoRefreshToken:  false,
+        detectSessionInUrl: false,
+      },
+    })
   }
 
-  // ── lifecycle ─────────────────────────────────────────────────────────────
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
   start(): void {
     if (this._running) return
     this._running = true
-    this._scheduleNext(0)
+    this._scheduleNext(2_000)   // first cycle 2 s after start
     console.log('[SyncEngine] started')
   }
 
@@ -60,14 +68,14 @@ export class SyncEngine {
     console.log('[SyncEngine] stopped')
   }
 
-  /** Trigger an immediate sync cycle (called after a successful check-in) */
+  /** Trigger an immediate cycle (called right after a check-in while online). */
   nudge(): void {
     if (!this._running) return
     if (this.timer) { clearTimeout(this.timer); this.timer = null }
-    this._scheduleNext(100)
+    this._scheduleNext(200)
   }
 
-  // ── status (read by IPC handler) ──────────────────────────────────────────
+  // ── Status (read by IPC handler) ──────────────────────────────────────────
   getStatus(): SyncStatus {
     return {
       online:    this._online,
@@ -78,13 +86,19 @@ export class SyncEngine {
     }
   }
 
-  // ── internal schedule ─────────────────────────────────────────────────────
+  // ── Internal schedule ─────────────────────────────────────────────────────
   private _scheduleNext(delayMs = SYNC_INTERVAL_MS): void {
     if (!this._running) return
     this.timer = setTimeout(() => this._cycle(), delayMs)
   }
 
   private async _cycle(): Promise<void> {
+    if (!this._client) {
+      this._state = 'offline'
+      this._scheduleNext()
+      return
+    }
+
     try {
       this._online = await this._checkOnline()
 
@@ -94,7 +108,7 @@ export class SyncEngine {
         this._state = 'offline'
       }
     } catch (err) {
-      this._state = 'error'
+      this._state     = 'error'
       this._lastError = String(err)
       console.error('[SyncEngine] cycle error:', err)
     } finally {
@@ -102,22 +116,26 @@ export class SyncEngine {
     }
   }
 
-  // ── connectivity check ────────────────────────────────────────────────────
+  // ── Connectivity check ────────────────────────────────────────────────────
+  // A lightweight query to app_settings (1 row read) — fast and cheap.
   private async _checkOnline(): Promise<boolean> {
+    if (!this._client) return false
     try {
-      const res = await fetch(`${this.baseUrl}${HEALTH_URL_SUFFIX}`, {
-        method: 'GET',
-        headers: this.headers(),
-        signal: AbortSignal.timeout(5000),
-      })
-      return res.ok
+      const { error } = await this._client
+        .from('app_settings')
+        .select('id')
+        .limit(1)
+        .abortSignal(AbortSignal.timeout(5_000))
+      return !error
     } catch {
       return false
     }
   }
 
-  // ── flush pending records ─────────────────────────────────────────────────
+  // ── Flush pending attendance records to Supabase ──────────────────────────
   private async _flush(): Promise<void> {
+    if (!this._client) return
+
     const records = getPendingRecords(100)
     if (!records.length) {
       this._state = 'idle'
@@ -125,62 +143,82 @@ export class SyncEngine {
     }
 
     this._state = 'syncing'
-    console.log(`[SyncEngine] flushing ${records.length} record(s)`)
+    console.log(`[SyncEngine] flushing ${records.length} record(s) to Supabase`)
+
+    // Map local queue records → Supabase attendance_records shape.
+    // We use the kiosk-generated UUID as the Supabase row ID to make upsert
+    // idempotent — re-sending the same record is safe.
+    const payload = records.map(r => ({
+      id:               r.id,
+      employee_id:      r.employee_id,
+      employee_name:    r.full_name,
+      employee_no:      r.employee_no,
+      department:       r.department,
+      date:             r.date,
+      time_in:          r.time_in,
+      time_out:         r.time_out,
+      status:           r.status,
+      minutes_late:     r.minutes_late,
+      overtime_minutes: r.overtime_minutes,
+      undertime_minutes: r.undertime_minutes,
+      night_diff_minutes: 0,    // not computed by kiosk — filled by web app if needed
+      source:           'kiosk',
+    }))
 
     try {
-      const res = await fetch(`${this.baseUrl}${ATTENDANCE_URL_SUFFIX}`, {
-        method:  'POST',
-        headers: this.headers(),
-        body:    JSON.stringify({ records }),
-        signal:  AbortSignal.timeout(15000),
-      })
+      const { error } = await this._client
+        .from('attendance_records')
+        .upsert(payload, { onConflict: 'employee_id,date' })
 
-      if (res.ok) {
-        const { accepted = [], rejected = [] } = await res.json() as {
-          accepted: string[]
-          rejected: { id: string; error: string }[]
-        }
-
-        if (accepted.length) markSynced(accepted)
-        if (rejected.length) {
-          for (const { id, error } of rejected) markFailed([id], error)
-        }
-
+      if (error) {
+        // Permanent error (constraint, RLS, etc.) — mark failed to avoid infinite retry.
+        markFailed(records.map(r => r.id), error.message)
+        this._state     = 'error'
+        this._lastError = error.message
+        console.error('[SyncEngine] upsert error:', error.message)
+      } else {
+        markSynced(records.map(r => r.id))
         this._lastSync  = new Date().toISOString()
         this._lastError = null
         this._state     = 'idle'
-        console.log(`[SyncEngine] synced ${accepted.length} record(s)`)
-      } else {
-        const text = await res.text()
-        const errMsg = `HTTP ${res.status}: ${text}`
-        markFailed(records.map(r => r.id), errMsg)
-        this._state     = 'error'
-        this._lastError = errMsg
+        console.log(`[SyncEngine] synced ${records.length} record(s)`)
       }
     } catch (err) {
-      const errMsg = String(err)
-      markFailed(records.map(r => r.id), errMsg)
+      // Network error — increment attempts, will retry
+      markFailed(records.map(r => r.id), String(err))
       this._state     = 'error'
-      this._lastError = errMsg
-      console.error('[SyncEngine] flush error:', err)
+      this._lastError = String(err)
+      console.error('[SyncEngine] flush network error:', err)
     }
   }
 
-  // ── refresh employee cache from server ────────────────────────────────────
+  // ── Refresh employee + shift caches from Supabase ─────────────────────────
   async refreshEmployeeCache(): Promise<void> {
+    if (!this._client) throw new Error('Supabase not configured')
+
     const online = await this._checkOnline()
     if (!online) throw new Error('Device is offline')
 
-    const res = await fetch(`${this.baseUrl}${EMPLOYEES_URL_SUFFIX}`, {
-      method:  'GET',
-      headers: this.headers(),
-      signal:  AbortSignal.timeout(15000),
-    })
+    // Fetch active employees
+    const { data: employees, error: empErr } = await this._client
+      .from('employees')
+      .select('id, employee_no, full_name, pin_code, rfid_tag, shift_id, department, position, status')
+      .eq('status', 'active')
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    if (empErr) throw new Error(empErr.message)
 
-    const { employees } = await res.json() as { employees: Parameters<typeof replaceEmployeeCache>[0] }
-    replaceEmployeeCache(employees)
-    console.log(`[SyncEngine] employee cache refreshed (${employees.length} records)`)
+    // Fetch all shifts (needed to compute late/OT/undertime offline)
+    const { data: shifts, error: shiftErr } = await this._client
+      .from('work_shifts')
+      .select('id, name, time_in, time_out, break_minutes, grace_minutes, overtime_threshold_minutes')
+
+    if (shiftErr) throw new Error(shiftErr.message)
+
+    replaceEmployeeCache((employees ?? []) as CachedEmployee[])
+    replaceShiftsCache((shifts ?? []) as CachedShift[])
+
+    console.log(
+      `[SyncEngine] cache refreshed — ${employees?.length ?? 0} employees, ${shifts?.length ?? 0} shifts`
+    )
   }
 }
