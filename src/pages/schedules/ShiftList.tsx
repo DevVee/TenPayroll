@@ -6,7 +6,7 @@ import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ActionIconBtn } from '../../components/ui/ActionIconBtn'
 import { useData } from '../../hooks/useData'
-import { apiGetShifts } from '../../lib/db'
+import { apiGetShifts, apiCreateShift, apiUpdateShift, apiDeleteShift } from '../../lib/db'
 import type { WorkShift } from '../../types'
 
 const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -54,21 +54,17 @@ export function ShiftList() {
     if (!form.name.trim()) return
     setSaving(true)
     try {
-      const stored = JSON.parse(localStorage.getItem('tp_shifts') || '[]') as WorkShift[]
       if (editing) {
-        const idx = stored.findIndex(s => s.id === editing.id)
-        if (idx !== -1) stored[idx] = { ...stored[idx], ...form }
+        await apiUpdateShift(editing.id, form)
       } else {
-        stored.push({ id: `shift_${Date.now()}`, ...form })
+        await apiCreateShift(form)
       }
-      localStorage.setItem('tp_shifts', JSON.stringify(stored))
       setModal(false); refetch()
     } finally { setSaving(false) }
   }
 
-  const deleteShift = (s: WorkShift) => {
-    const stored = JSON.parse(localStorage.getItem('tp_shifts') || '[]') as WorkShift[]
-    localStorage.setItem('tp_shifts', JSON.stringify(stored.filter(x => x.id !== s.id)))
+  const handleDelete = async (s: WorkShift) => {
+    await apiDeleteShift(s.id)
     setDeleteConfirm(null); refetch()
   }
 
@@ -150,9 +146,9 @@ export function ShiftList() {
                   {DAY_ABBR.map((d,i) => (
                     <span key={d} className="inline-flex items-center justify-center w-7 h-7 text-[10px] font-bold"
                       style={{
-                        background: s.restDays.includes(i) ? '#EEF2FF' : '#F8FAFC',
-                        color: s.restDays.includes(i) ? '#4F46E5' : '#94A3B8',
-                        border: `1px solid ${s.restDays.includes(i) ? '#C7D2FE' : '#E2E8F0'}`,
+                        background: s.restDays.includes(i) ? '#FEF2F2' : '#F8FAFC',
+                        color: s.restDays.includes(i) ? '#DC2626' : '#94A3B8',
+                        border: `1px solid ${s.restDays.includes(i) ? '#FECACA' : '#E2E8F0'}`,
                       }}>
                       {d}
                     </span>
@@ -221,9 +217,9 @@ export function ShiftList() {
                 <button key={d} type="button" onClick={() => toggleRestDay(i)}
                   className="flex items-center justify-center w-10 h-10 text-xs font-bold transition-colors"
                   style={{
-                    background: form.restDays.includes(i) ? '#4F46E5' : '#F8FAFC',
+                    background: form.restDays.includes(i) ? '#DC2626' : '#F8FAFC',
                     color: form.restDays.includes(i) ? '#FFFFFF' : '#64748B',
-                    border: `1px solid ${form.restDays.includes(i) ? '#4F46E5' : '#E2E8F0'}`,
+                    border: `1px solid ${form.restDays.includes(i) ? '#DC2626' : '#E2E8F0'}`,
                     borderRadius: 8,
                   }}>
                   {d}
@@ -232,7 +228,7 @@ export function ShiftList() {
             </div>
           </div>
           {form.name && (
-            <div className="p-3 text-xs" style={{ background:'#EEF2FF', border:'1px solid #C7D2FE', borderRadius: 8, color: '#4338CA' }}>
+            <div className="p-3 text-xs" style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius: 8, color: '#991B1B' }}>
               Total work: {calcHours(form.timeIn, form.timeOut, form.breakMinutes)} hrs/day ·
               Work days: {7 - form.restDays.length}/week
             </div>
@@ -245,7 +241,7 @@ export function ShiftList() {
         footer={
           <>
             <button onClick={() => setDeleteConfirm(null)} className="btn-secondary">Cancel</button>
-            <button onClick={() => deleteConfirm && deleteShift(deleteConfirm)}
+            <button onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
               className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors">
               Delete
             </button>

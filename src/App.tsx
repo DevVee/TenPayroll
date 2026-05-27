@@ -20,6 +20,7 @@ const queryClient = new QueryClient({
 const Landing        = lazy(() => import('./pages/landing/Landing').then(m => ({ default: m.Landing })))
 const Login          = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })))
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })))
+const ResetPassword  = lazy(() => import('./pages/auth/ResetPassword').then(m => ({ default: m.ResetPassword })))
 const Kiosk          = lazy(() => import('./pages/kiosk/Kiosk').then(m => ({ default: m.Kiosk })))
 const Dashboard      = lazy(() => import('./pages/dashboard/Dashboard').then(m => ({ default: m.Dashboard })))
 const EmployeeList   = lazy(() => import('./pages/employees/EmployeeList').then(m => ({ default: m.EmployeeList })))
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/"                element={<Landing />} />
             <Route path="/login"           element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password"  element={<ResetPassword />} />
             <Route path="/kiosk"           element={<Kiosk />} />
 
             {/* ── Protected app — pathless layout route ── */}
