@@ -17,7 +17,7 @@ const BLANK: FormData = {
   position:'', department:'', employmentType:'regular', status:'active',
   hireDate: new Date().toISOString().split('T')[0],
   compensationType: 'monthly', compensationRate: 0,
-  basicSalary: 0, dailyRate: 0, payFrequency:'weekly', rfidTag:'',
+  basicSalary: 0, dailyRate: 0, payFrequency:'weekly', pinCode:'', rfidTag:'',
   sssNo:'', philhealthNo:'', pagibigNo:'', tinNo:'',
   bankName:'', bankAccount:'', shiftId:'sh-1', taxStatus:'S',
   allowances:[], emergencyContactName:'', emergencyContactPhone:'',
@@ -49,6 +49,16 @@ function Field({ label, required, children }: {
 // ── PSGC Cascading Address ───────────────────────────────────────────────────
 interface PSGCItem { code: string; name: string }
 
+/** Fetch JSON from PSGC API with sessionStorage caching (avoids repeat calls on re-mount). */
+async function fetchPSGC<T>(url: string): Promise<T> {
+  const cached = sessionStorage.getItem(`psgc:${url}`)
+  if (cached) return JSON.parse(cached) as T
+  const res  = await fetch(url)
+  const data = await res.json() as T
+  sessionStorage.setItem(`psgc:${url}`, JSON.stringify(data))
+  return data
+}
+
 function AddressSection({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [manual,      setManual]      = useState(false)
   const [house,       setHouse]       = useState('')
@@ -79,43 +89,37 @@ function AddressSection({ value, onChange }: { value: string; onChange: (v: stri
     }
   }, [value])
 
-  // Fetch regions on mount
+  // Fetch regions on mount (cached in sessionStorage)
   useEffect(() => {
-    fetch('https://psgc.gitlab.io/api/regions.json')
-      .then(r => r.json())
-      .then((data: PSGCItem[]) =>
-        setRegions(data.sort((a, b) => a.name.localeCompare(b.name)))
-      )
+    fetchPSGC<PSGCItem[]>('https://psgc.gitlab.io/api/regions.json')
+      .then(data => setRegions(data.sort((a, b) => a.name.localeCompare(b.name))))
       .catch(() => setManual(true))
   }, [])
 
-  // Fetch provinces when region selected
+  // Fetch provinces when region selected (cached)
   useEffect(() => {
     if (!regionCode) { setProvinces([]); return }
     setLoadP(true)
-    fetch(`https://psgc.gitlab.io/api/regions/${regionCode}/provinces.json`)
-      .then(r => r.json())
-      .then((data: PSGCItem[]) => { setProvinces(data.sort((a,b)=>a.name.localeCompare(b.name))); setLoadP(false) })
+    fetchPSGC<PSGCItem[]>(`https://psgc.gitlab.io/api/regions/${regionCode}/provinces.json`)
+      .then(data => { setProvinces(data.sort((a,b)=>a.name.localeCompare(b.name))); setLoadP(false) })
       .catch(() => { setLoadP(false); setManual(true) })
   }, [regionCode])
 
-  // Fetch cities when province selected
+  // Fetch cities when province selected (cached)
   useEffect(() => {
     if (!provinceCode) { setCities([]); return }
     setLoadC(true)
-    fetch(`https://psgc.gitlab.io/api/provinces/${provinceCode}/cities-municipalities.json`)
-      .then(r => r.json())
-      .then((data: PSGCItem[]) => { setCities(data.sort((a,b)=>a.name.localeCompare(b.name))); setLoadC(false) })
+    fetchPSGC<PSGCItem[]>(`https://psgc.gitlab.io/api/provinces/${provinceCode}/cities-municipalities.json`)
+      .then(data => { setCities(data.sort((a,b)=>a.name.localeCompare(b.name))); setLoadC(false) })
       .catch(() => { setLoadC(false); setManual(true) })
   }, [provinceCode])
 
-  // Fetch barangays when city selected
+  // Fetch barangays when city selected (cached)
   useEffect(() => {
     if (!cityCode) { setBarangays([]); return }
     setLoadB(true)
-    fetch(`https://psgc.gitlab.io/api/cities-municipalities/${cityCode}/barangays.json`)
-      .then(r => r.json())
-      .then((data: PSGCItem[]) => { setBarangays(data.sort((a,b)=>a.name.localeCompare(b.name))); setLoadB(false) })
+    fetchPSGC<PSGCItem[]>(`https://psgc.gitlab.io/api/cities-municipalities/${cityCode}/barangays.json`)
+      .then(data => { setBarangays(data.sort((a,b)=>a.name.localeCompare(b.name))); setLoadB(false) })
       .catch(() => { setLoadB(false); setManual(true) })
   }, [cityCode])
 
@@ -439,6 +443,28 @@ export function EmployeeForm() {
                   placeholder="Auto-generated if left blank" />
                 <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
                   Leave blank to auto-assign on save.
+                </p>
+              </div>
+              <div>
+                <label className="form-label">
+                  Kiosk PIN{' '}
+                  <span style={{ color: '#64748B', fontSize: 10, fontWeight: 400 }}>(4–8 digits, must be unique)</span>
+                </label>
+                <input
+                  className="input-base"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={8}
+                  value={form.pinCode ?? ''}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 8)
+                    set('pinCode', v)
+                  }}
+                  placeholder="e.g. 1234"
+                />
+                <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+                  Used by the kiosk for time-in/out. Leave blank to disable PIN login.
                 </p>
               </div>
               <div>

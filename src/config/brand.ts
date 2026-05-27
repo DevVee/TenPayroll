@@ -88,9 +88,9 @@ export const brand: BrandConfig = {
   defaultCompanyName: 'Ten Foundation Philippines Inc.',
 
   theme: {
-    primary:      '#4F46E5',   // indigo-600
-    primaryLight: '#EEF2FF',   // indigo-50
-    primaryMid:   '#C7D2FE',   // indigo-200
+    primary:      '#DC2626',   // red-600
+    primaryLight: '#FEF2F2',   // red-50
+    primaryMid:   '#FECACA',   // red-200
     sidebar: {
       bg:           '#0D0E14',
       border:       'rgba(255,255,255,0.06)',
@@ -98,12 +98,12 @@ export const brand: BrandConfig = {
       textHover:    '#CBD5E1',
       textActive:   '#E2E8F0',
       hoverBg:      'rgba(255,255,255,0.05)',
-      activeBg:     'rgba(79,70,229,0.12)',
-      activeBorder: '#4F46E5',
+      activeBg:     'rgba(220,38,38,0.12)',
+      activeBorder: '#DC2626',
       section:      'rgba(255,255,255,0.25)',
       childText:    '#64748B',
       childHover:   '#94A3B8',
-      childActive:  '#A5B4FC',
+      childActive:  '#FCA5A5',
     },
   },
 

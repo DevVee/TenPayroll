@@ -15,16 +15,17 @@ const FEATURES = [
 
 export function Login() {
   const navigate = useNavigate()
-  const { login, user } = useAuthStore()
+  const { login, user, isLoading } = useAuthStore()
   const [email,   setEmail]   = useState("")
   const [password,setPassword]= useState("")
   const [showPw,  setShowPw]  = useState(false)
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState("")
 
+  // Only redirect once session restoration is complete — prevents flash
   useEffect(() => {
-    if (user) navigate("/dashboard", { replace: true })
-  }, [user, navigate])
+    if (!isLoading && user) navigate("/dashboard", { replace: true })
+  }, [isLoading, user, navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,15 +47,15 @@ export function Login() {
       {/* Left hero */}
       <div
         className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4c1d95 100%)" }}
+        style={{ background: "linear-gradient(135deg, #450a0a 0%, #7f1d1d 40%, #991b1b 100%)" }}
       >
         <div style={{
           position: "absolute", inset: 0, opacity: 0.06,
           backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
         }} />
-        <div style={{ position: "absolute", top: -100, left: -100, width: 400, height: 400, borderRadius: "50%", background: "rgba(139,92,246,0.25)", filter: "blur(80px)" }} />
-        <div style={{ position: "absolute", bottom: -80, right: -80, width: 350, height: 350, borderRadius: "50%", background: "rgba(99,102,241,0.20)", filter: "blur(80px)" }} />
+        <div style={{ position: "absolute", top: -100, left: -100, width: 400, height: 400, borderRadius: "50%", background: "rgba(220,38,38,0.25)", filter: "blur(80px)" }} />
+        <div style={{ position: "absolute", bottom: -80, right: -80, width: 350, height: 350, borderRadius: "50%", background: "rgba(185,28,28,0.20)", filter: "blur(80px)" }} />
 
         <div className="relative z-10 flex flex-col h-full p-12">
           <div className="flex items-center gap-3 mb-auto">
@@ -71,7 +72,7 @@ export function Login() {
               style={{ fontSize: 38, fontWeight: 900, color: "#fff", letterSpacing: "-0.04em", lineHeight: 1.15, marginBottom: 16 }}
             >
               Modern HR & Payroll<br />for the{" "}
-              <span style={{ background: "linear-gradient(90deg, #A78BFA, #818CF8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              <span style={{ background: "linear-gradient(90deg, #FCA5A5, #FCD34D)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Philippines.
               </span>
             </motion.h1>
@@ -87,7 +88,7 @@ export function Login() {
             {FEATURES.map((f, i) => (
               <motion.div key={f.title} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.25 + i * 0.07 }} className="flex items-start gap-3">
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <f.icon style={{ width: 16, height: 16, color: "#A78BFA" }} />
+                  <f.icon style={{ width: 16, height: 16, color: "#FCA5A5" }} />
                 </div>
                 <div>
                   <p style={{ fontSize: 13.5, fontWeight: 600, color: "#fff", letterSpacing: "-0.01em" }}>{f.title}</p>
@@ -120,7 +121,18 @@ export function Login() {
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@company.com" className="input-base" autoComplete="email" />
             </div>
             <div>
-              <label className="form-label">Password</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="form-label" style={{ marginBottom: 0 }}>Password</label>
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  style={{ fontSize: 12, color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = '#DC2626')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = '#64748B')}
+                >
+                  Forgot password?
+                </button>
+              </div>
               <div className="relative">
                 <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter password" className="input-base" style={{ paddingRight: 44 }} autoComplete="current-password" />
                 <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#94A3B8", background: "none", border: "none", cursor: "pointer" }}>
@@ -143,7 +155,7 @@ export function Login() {
           </form>
 
           <div className="mt-6 text-center">
-            <button onClick={() => navigate("/kiosk")} className="inline-flex items-center gap-1.5 transition-colors" style={{ fontSize: 13, color: "#64748B", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#4F46E5")} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "#64748B")}>
+            <button onClick={() => navigate("/kiosk")} className="inline-flex items-center gap-1.5 transition-colors" style={{ fontSize: 13, color: "#64748B", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }} onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#DC2626")} onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "#64748B")}>
               Open Employee Kiosk <ChevronRight style={{ width: 14, height: 14 }} />
             </button>
           </div>

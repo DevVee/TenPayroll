@@ -119,6 +119,11 @@ CREATE TRIGGER trg_employees_updated_at
   BEFORE UPDATE ON employees
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+-- Partial UNIQUE: allows multiple NULLs (employees without PIN/RFID),
+-- but enforces uniqueness for any non-NULL value.
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_employees_pin_code ON employees(pin_code) WHERE pin_code IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uidx_employees_rfid_tag ON employees(rfid_tag) WHERE rfid_tag IS NOT NULL;
+
 -- ══════════════════════════════════════════════════════════════════════════════
 -- ATTENDANCE RECORDS
 -- ══════════════════════════════════════════════════════════════════════════════
@@ -135,6 +140,7 @@ CREATE TABLE IF NOT EXISTS attendance_records (
   minutes_late       INT  NOT NULL DEFAULT 0,
   overtime_minutes   INT  NOT NULL DEFAULT 0,
   night_diff_minutes INT  NOT NULL DEFAULT 0,
+  undertime_minutes  INT  NOT NULL DEFAULT 0,
   source             TEXT NOT NULL DEFAULT 'kiosk',   -- 'kiosk' | 'manual'
   corrected_by       TEXT,
   correction_reason  TEXT,
@@ -305,6 +311,14 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
 CREATE INDEX idx_audit_logs_module    ON audit_logs(module);
 
+-- Additional performance indexes (missing from initial schema)
+CREATE INDEX IF NOT EXISTS idx_employees_status        ON employees(status);
+CREATE INDEX IF NOT EXISTS idx_employees_department    ON employees(department);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_employee ON leave_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_leave_requests_status   ON leave_requests(status);
+CREATE INDEX IF NOT EXISTS idx_payroll_entries_period  ON payroll_entries(payroll_period_id);
+CREATE INDEX IF NOT EXISTS idx_overtime_employee       ON overtime_requests(employee_id);
+
 -- ══════════════════════════════════════════════════════════════════════════════
 -- APP SETTINGS  (key-value, single-row per key)
 -- ══════════════════════════════════════════════════════════════════════════════
@@ -326,9 +340,8 @@ RETURNS TEXT LANGUAGE sql AS $$
 $$;
 
 -- ══════════════════════════════════════════════════════════════════════════════
--- ROW LEVEL SECURITY
--- Authenticated users have full access (role-based logic is enforced in the app).
--- Tighten per-table policies before going to production.
+-- ROW LEVEL SECURITY  (role-aware — replaces blanket authenticated_all)
+-- Roles: super-admin | hr-admin | payroll-officer | dept-head | employee
 -- ══════════════════════════════════════════════════════════════════════════════
 ALTER TABLE profiles           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments        ENABLE ROW LEVEL SECURITY;
@@ -345,19 +358,192 @@ ALTER TABLE payroll_entries    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings       ENABLE ROW LEVEL SECURITY;
 
--- Allow all actions for authenticated users (anon key + signed-in session)
-DO $$
-DECLARE tbl TEXT;
-BEGIN
-  FOREACH tbl IN ARRAY ARRAY[
-    'profiles','departments','positions','work_shifts','employees',
-    'attendance_records','holidays','leave_requests','leave_balances',
-    'overtime_requests','payroll_periods','payroll_entries',
-    'audit_logs','app_settings'
-  ] LOOP
-    EXECUTE FORMAT(
-      'CREATE POLICY "authenticated_all" ON %I FOR ALL TO authenticated USING (TRUE) WITH CHECK (TRUE)',
-      tbl
-    );
-  END LOOP;
-END $$;
+-- ── Helper functions ──────────────────────────────────────────────────────────
+-- SECURITY DEFINER bypasses RLS when reading profiles (prevents recursion).
+CREATE OR REPLACE FUNCTION get_my_role()
+RETURNS TEXT LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT COALESCE(role, 'employee') FROM profiles WHERE id = auth.uid();
+$$;
+
+-- Returns TRUE for any role that administers the system.
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT get_my_role() IN ('super-admin','hr-admin','payroll-officer','dept-head');
+$$;
+
+-- ── PROFILES ─────────────────────────────────────────────────────────────────
+-- All authenticated users read their own profile; admins read all.
+CREATE POLICY "profiles_select" ON profiles
+  FOR SELECT TO authenticated
+  USING (id = auth.uid() OR is_admin());
+
+-- Only super-admin / hr-admin create or delete profiles.
+CREATE POLICY "profiles_write_admin" ON profiles
+  FOR ALL TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin'));
+
+-- Any user can update their own name / avatar.
+CREATE POLICY "profiles_update_self" ON profiles
+  FOR UPDATE TO authenticated
+  USING    (id = auth.uid())
+  WITH CHECK (id = auth.uid());
+
+-- ── REFERENCE TABLES (departments, positions, work_shifts, holidays) ──────────
+-- Admins manage; everyone else reads.
+CREATE POLICY "departments_select" ON departments FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "departments_write"  ON departments FOR ALL    TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin'));
+
+CREATE POLICY "positions_select" ON positions FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "positions_write"  ON positions FOR ALL    TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin'));
+
+CREATE POLICY "work_shifts_select" ON work_shifts FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "work_shifts_write"  ON work_shifts FOR ALL    TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin'));
+
+CREATE POLICY "holidays_select" ON holidays FOR SELECT TO authenticated USING (TRUE);
+CREATE POLICY "holidays_write"  ON holidays FOR ALL    TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin'));
+
+-- ── EMPLOYEES ─────────────────────────────────────────────────────────────────
+-- Admins: full CRUD.
+-- Employees: SELECT own record only (via profiles.employee_id).
+-- Anon (kiosk machine): SELECT only — needed for PIN/RFID lookup.
+CREATE POLICY "employees_admin" ON employees
+  FOR ALL TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin'));
+
+CREATE POLICY "employees_read_auth" ON employees
+  FOR SELECT TO authenticated
+  USING (is_admin() OR id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+CREATE POLICY "employees_kiosk_lookup" ON employees
+  FOR SELECT TO anon
+  USING (TRUE);   -- kiosk needs full scan for PIN/RFID; no PII beyond what's on the terminal
+
+-- ── ATTENDANCE RECORDS ────────────────────────────────────────────────────────
+-- Admins: full CRUD.
+-- Employees: SELECT own records.
+-- Anon (kiosk): INSERT + UPDATE today's record; SELECT today's records.
+CREATE POLICY "attendance_admin" ON attendance_records
+  FOR ALL TO authenticated
+  USING    (is_admin())
+  WITH CHECK (is_admin());
+
+CREATE POLICY "attendance_self" ON attendance_records
+  FOR SELECT TO authenticated
+  USING (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+CREATE POLICY "attendance_kiosk_select" ON attendance_records
+  FOR SELECT TO anon USING (date = CURRENT_DATE);
+
+CREATE POLICY "attendance_kiosk_insert" ON attendance_records
+  FOR INSERT TO anon WITH CHECK (date = CURRENT_DATE);
+
+CREATE POLICY "attendance_kiosk_update" ON attendance_records
+  FOR UPDATE TO anon
+  USING    (date = CURRENT_DATE)
+  WITH CHECK (date = CURRENT_DATE);
+
+-- ── LEAVE REQUESTS ────────────────────────────────────────────────────────────
+-- Admins: full CRUD.
+-- Employees: SELECT own; INSERT own; UPDATE own pending requests.
+CREATE POLICY "leave_requests_admin" ON leave_requests
+  FOR ALL TO authenticated
+  USING    (is_admin())
+  WITH CHECK (is_admin());
+
+CREATE POLICY "leave_requests_select_self" ON leave_requests
+  FOR SELECT TO authenticated
+  USING (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+CREATE POLICY "leave_requests_insert_self" ON leave_requests
+  FOR INSERT TO authenticated
+  WITH CHECK (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+CREATE POLICY "leave_requests_update_self" ON leave_requests
+  FOR UPDATE TO authenticated
+  USING    (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()) AND status = 'pending')
+  WITH CHECK (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+-- ── LEAVE BALANCES ────────────────────────────────────────────────────────────
+CREATE POLICY "leave_balances_admin" ON leave_balances
+  FOR ALL TO authenticated
+  USING    (is_admin())
+  WITH CHECK (is_admin());
+
+CREATE POLICY "leave_balances_self" ON leave_balances
+  FOR SELECT TO authenticated
+  USING (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+-- ── OVERTIME REQUESTS ─────────────────────────────────────────────────────────
+CREATE POLICY "overtime_admin" ON overtime_requests
+  FOR ALL TO authenticated
+  USING    (is_admin())
+  WITH CHECK (is_admin());
+
+CREATE POLICY "overtime_select_self" ON overtime_requests
+  FOR SELECT TO authenticated
+  USING (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+CREATE POLICY "overtime_insert_self" ON overtime_requests
+  FOR INSERT TO authenticated
+  WITH CHECK (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+CREATE POLICY "overtime_update_self" ON overtime_requests
+  FOR UPDATE TO authenticated
+  USING    (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()) AND status = 'pending')
+  WITH CHECK (employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid()));
+
+-- ── PAYROLL PERIODS & ENTRIES ─────────────────────────────────────────────────
+-- super-admin + payroll-officer: full CRUD.
+-- hr-admin + dept-head: SELECT only.
+-- Employees: SELECT own payslip entries only.
+CREATE POLICY "payroll_periods_write" ON payroll_periods
+  FOR ALL TO authenticated
+  USING    (get_my_role() IN ('super-admin','payroll-officer'))
+  WITH CHECK (get_my_role() IN ('super-admin','payroll-officer'));
+
+CREATE POLICY "payroll_periods_read" ON payroll_periods
+  FOR SELECT TO authenticated
+  USING (get_my_role() IN ('super-admin','payroll-officer','hr-admin','dept-head'));
+
+CREATE POLICY "payroll_entries_write" ON payroll_entries
+  FOR ALL TO authenticated
+  USING    (get_my_role() IN ('super-admin','payroll-officer'))
+  WITH CHECK (get_my_role() IN ('super-admin','payroll-officer'));
+
+CREATE POLICY "payroll_entries_read" ON payroll_entries
+  FOR SELECT TO authenticated
+  USING (
+    get_my_role() IN ('super-admin','payroll-officer','hr-admin','dept-head')
+    OR employee_id = (SELECT employee_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- ── AUDIT LOGS ────────────────────────────────────────────────────────────────
+-- All authenticated roles can INSERT (every module logs actions).
+-- Only super-admin / hr-admin can SELECT (audit trail visibility).
+CREATE POLICY "audit_logs_insert" ON audit_logs
+  FOR INSERT TO authenticated WITH CHECK (TRUE);
+
+CREATE POLICY "audit_logs_select" ON audit_logs
+  FOR SELECT TO authenticated
+  USING (get_my_role() IN ('super-admin','hr-admin'));
+
+-- ── APP SETTINGS ──────────────────────────────────────────────────────────────
+-- All authenticated users read settings (company name, deduction rates, etc.).
+-- Only admins and payroll-officer can write.
+CREATE POLICY "app_settings_select" ON app_settings
+  FOR SELECT TO authenticated USING (TRUE);
+
+CREATE POLICY "app_settings_write" ON app_settings
+  FOR ALL TO authenticated
+  USING    (get_my_role() IN ('super-admin','hr-admin','payroll-officer'))
+  WITH CHECK (get_my_role() IN ('super-admin','hr-admin','payroll-officer'));

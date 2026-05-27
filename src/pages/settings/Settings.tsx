@@ -5,10 +5,10 @@ import { SearchInput } from '../../components/ui/SearchInput'
 import { Modal } from '../../components/ui/Modal'
 import { ActionIconBtn } from '../../components/ui/ActionIconBtn'
 import {
-  getCompanySettings, saveCompanySettings,
+  getCompanySettings, apiSaveCompanySettings,
   apiGetDepartments, apiCreateDepartment, apiUpdateDepartment, apiDeleteDepartment,
   apiGetPositions, apiCreatePosition, apiUpdatePosition, apiDeletePosition,
-  getDeductionSettings, saveDeductionSettings,
+  getDeductionSettings, apiSaveDeductionSettings,
 } from '../../lib/db'
 import type { CompanySettings, Department, Position, PayrollDeductionSettings } from '../../types'
 
@@ -54,21 +54,31 @@ export function Settings() {
 // ─── Company Tab ───────────────────────────────────────────────────────────────
 function CompanyTab() {
   const [settings, setSettings] = useState<CompanySettings>(getCompanySettings())
-  const [saved, setSaved] = useState(false)
+  const [saved,    setSaved]    = useState(false)
+  const [saveErr,  setSaveErr]  = useState('')
+  const [saving,   setSaving]   = useState(false)
 
   const update = (patch: Partial<CompanySettings>) => setSettings(s => ({...s, ...patch}))
-  const handleSave = () => {
-    saveCompanySettings(settings)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  const handleSave = async () => {
+    setSaving(true); setSaveErr('')
+    try {
+      await apiSaveCompanySettings(settings)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <button onClick={handleSave} className="btn-primary">
+      <div className="flex items-center justify-end gap-3">
+        {saveErr && <p style={{ fontSize: 13, color: '#DC2626' }}>{saveErr}</p>}
+        <button onClick={handleSave} disabled={saving} className="btn-primary">
           <Save className="w-3.5 h-3.5" />
-          {saved ? '✓ Saved!' : 'Save Changes'}
+          {saving ? 'Saving…' : saved ? '✓ Saved!' : 'Save Changes'}
         </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -321,24 +331,36 @@ function PositionsTab() {
 
 // ─── Deductions Tab ────────────────────────────────────────────────────────────
 function DeductionsTab() {
-  const [ds, setDs] = useState<PayrollDeductionSettings>(getDeductionSettings())
-  const [saved, setSaved] = useState(false)
+  const [ds,      setDs]    = useState<PayrollDeductionSettings>(getDeductionSettings())
+  const [saved,   setSaved] = useState(false)
+  const [saveErr, setSaveErr] = useState('')
+  const [saving,  setSaving]  = useState(false)
 
   const up = (patch: Partial<PayrollDeductionSettings>) => setDs(s => ({...s, ...patch}))
-  const handleSave = () => {
-    saveDeductionSettings(ds)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  const handleSave = async () => {
+    setSaving(true); setSaveErr('')
+    try {
+      await apiSaveDeductionSettings(ds)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">Configure how deductions are calculated during payroll generation.</p>
-        <button onClick={handleSave} className="btn-primary">
-          <Save className="w-3.5 h-3.5" />
-          {saved ? '✓ Saved!' : 'Save Changes'}
-        </button>
+        <div className="flex items-center gap-3">
+          {saveErr && <p style={{ fontSize: 13, color: '#DC2626' }}>{saveErr}</p>}
+          <button onClick={handleSave} disabled={saving} className="btn-primary">
+            <Save className="w-3.5 h-3.5" />
+            {saving ? 'Saving…' : saved ? '✓ Saved!' : 'Save Changes'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -445,21 +467,31 @@ function DeductionsTab() {
 // ─── Payroll Settings Tab ──────────────────────────────────────────────────────
 function PayrollTab() {
   const [settings, setSettings] = useState<CompanySettings>(getCompanySettings())
-  const [saved, setSaved] = useState(false)
+  const [saved,    setSaved]    = useState(false)
+  const [saveErr,  setSaveErr]  = useState('')
+  const [saving,   setSaving]   = useState(false)
 
   const update = (patch: Partial<CompanySettings>) => setSettings(s => ({...s, ...patch}))
-  const handleSave = () => {
-    saveCompanySettings(settings)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  const handleSave = async () => {
+    setSaving(true); setSaveErr('')
+    try {
+      await apiSaveCompanySettings(settings)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      setSaveErr(err instanceof Error ? err.message : 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <button onClick={handleSave} className="btn-primary">
+      <div className="flex items-center justify-end gap-3">
+        {saveErr && <p style={{ fontSize: 13, color: '#DC2626' }}>{saveErr}</p>}
+        <button onClick={handleSave} disabled={saving} className="btn-primary">
           <Save className="w-3.5 h-3.5" />
-          {saved ? '✓ Saved!' : 'Save Changes'}
+          {saving ? 'Saving…' : saved ? '✓ Saved!' : 'Save Changes'}
         </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

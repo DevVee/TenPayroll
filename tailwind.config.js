@@ -16,10 +16,10 @@ export default {
     },
     extend: {
       colors: {
-        brand:         '#4F46E5',
-        'brand-dark':  '#4338CA',
-        'brand-light': '#EEF2FF',
-        'brand-pale':  '#E0E7FF',
+        brand:         '#DC2626',
+        'brand-dark':  '#B91C1C',
+        'brand-light': '#FEF2F2',
+        'brand-pale':  '#FEE2E2',
         sidebar:       '#0D0E14',
         surface:       '#F8FAFC',
       },
@@ -34,7 +34,7 @@ export default {
         lg:           '0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04)',
         modal:        '0 20px 60px rgba(0,0,0,0.15)',
         dropdown:     '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-        'indigo-glow':'0 2px 8px rgba(79,70,229,0.4)',
+        'red-glow':   '0 2px 8px rgba(220,38,38,0.4)',
       },
       keyframes: {
         'slide-up': {

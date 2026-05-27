@@ -253,18 +253,19 @@ export async function apiGetLeaveBalances(employeeId?: string): Promise<LeaveBal
   if (employeeId) query = query.eq('employee_id', employeeId)
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []).map((r) => ({
-    id:           r.id,
-    employeeId:   r.employee_id,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    employeeName: (r.employees as any)?.full_name    ?? undefined,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    employeeNo:   (r.employees as any)?.employee_no  ?? undefined,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    department:   (r.employees as any)?.department   ?? undefined,
-    year:         r.year,
-    vacation:     r.vacation,
-    sick:         r.sick,
-    emergency:    r.emergency,
-  }))
+  type JoinedEmployee = { full_name: string; employee_no: string; department: string | null } | null
+  return (data ?? []).map((r) => {
+    const emp = r.employees as JoinedEmployee
+    return {
+      id:           r.id,
+      employeeId:   r.employee_id,
+      employeeName: emp?.full_name    ?? undefined,
+      employeeNo:   emp?.employee_no  ?? undefined,
+      department:   emp?.department   ?? undefined,
+      year:         r.year,
+      vacation:     r.vacation,
+      sick:         r.sick,
+      emergency:    r.emergency,
+    }
+  })
 }

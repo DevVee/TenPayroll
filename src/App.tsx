@@ -19,6 +19,7 @@ const queryClient = new QueryClient({
 // ─── Lazy-loaded pages ────────────────────────────────────────────────────────
 const Landing        = lazy(() => import('./pages/landing/Landing').then(m => ({ default: m.Landing })))
 const Login          = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })))
 const Kiosk          = lazy(() => import('./pages/kiosk/Kiosk').then(m => ({ default: m.Kiosk })))
 const Dashboard      = lazy(() => import('./pages/dashboard/Dashboard').then(m => ({ default: m.Dashboard })))
 const EmployeeList   = lazy(() => import('./pages/employees/EmployeeList').then(m => ({ default: m.EmployeeList })))
@@ -40,7 +41,21 @@ const NotFound       = lazy(() => import('./pages/NotFound').then(m => ({ defaul
 
 // ─── Auth guard ───────────────────────────────────────────────────────────────
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const user = useAuthStore(s => s.user)
+  const user      = useAuthStore(s => s.user)
+  const isLoading = useAuthStore(s => s.isLoading)
+
+  // Wait for session restore before making a routing decision — prevents login flash
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--color-bg)' }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2.5 }} />
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 500 }}>Loading…</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!user) return <Navigate to="/login" replace />
   return <>{children}</>
 }
@@ -53,9 +68,10 @@ export default function App() {
         <Suspense fallback={<div className="h-screen flex items-center justify-center"><div className="spinner" /></div>}>
           <Routes>
             {/* ── Public ── */}
-            <Route path="/"      element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/kiosk" element={<Kiosk />} />
+            <Route path="/"                element={<Landing />} />
+            <Route path="/login"           element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/kiosk"           element={<Kiosk />} />
 
             {/* ── Protected app — pathless layout route ── */}
             <Route element={<RequireAuth><AppLayout /></RequireAuth>}>

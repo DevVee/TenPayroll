@@ -51,10 +51,11 @@ export async function loadCompanySettings(): Promise<CompanySettings> {
 
 export async function apiSaveCompanySettings(s: CompanySettings): Promise<void> {
   _companyCache = s
-  await supabase.from('app_settings').upsert(
+  const { error } = await supabase.from('app_settings').upsert(
     { id: 'company', value: s },
     { onConflict: 'id' }
   )
+  if (error) throw new Error(error.message)
 }
 
 export async function loadDeductionSettings(): Promise<PayrollDeductionSettings> {
@@ -70,10 +71,11 @@ export async function loadDeductionSettings(): Promise<PayrollDeductionSettings>
 
 export async function apiSaveDeductionSettings(s: PayrollDeductionSettings): Promise<void> {
   _deductionCache = s
-  await supabase.from('app_settings').upsert(
+  const { error } = await supabase.from('app_settings').upsert(
     { id: 'deductions', value: s },
     { onConflict: 'id' }
   )
+  if (error) throw new Error(error.message)
 }
 
 /** Call once on app start to warm the caches from Supabase. */

@@ -1,6 +1,13 @@
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 import { supabase } from '../supabase'
+import { SUPABASE_URL } from '../config/backend'
 import type { HRUser } from '../../types'
+
+// Derive storage key once at module load — no hardcoded project IDs
+const _projectId = (() => {
+  try { return new URL(SUPABASE_URL).hostname.split('.')[0] } catch { return '' }
+})()
+const _tokenKey = _projectId ? `sb-${_projectId}-auth-token` : null
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 export async function loadProfile(userId: string): Promise<HRUser | null> {
@@ -45,10 +52,11 @@ export async function getCurrentUserAsync(): Promise<HRUser | null> {
   return { ...profile, email: session.user.email! }
 }
 
-/** Synchronous token getter — just reads Supabase's localStorage entry. */
+/** Synchronous token getter — reads Supabase's localStorage entry with a dynamic key. */
 export function getToken(): string | null {
   try {
-    const raw = localStorage.getItem('sb-paymnddcvkvtybcyjxhs-auth-token')
+    if (!_tokenKey) return null
+    const raw = localStorage.getItem(_tokenKey)
     const parsed = raw ? JSON.parse(raw) : null
     return parsed?.access_token ?? null
   } catch {

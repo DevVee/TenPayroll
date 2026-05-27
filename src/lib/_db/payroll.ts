@@ -148,6 +148,21 @@ export async function apiCreatePayrollPeriod(
   createdBy = 'System'
 ): Promise<{ period: PayrollPeriod; entries: PayrollEntry[] }> {
 
+  // 0. Overlap guard — reject if any existing period's date range overlaps with the new one.
+  const { data: overlapping } = await supabase
+    .from('payroll_periods')
+    .select('id, period_no, start_date, end_date')
+    .lte('start_date', input.endDate)
+    .gte('end_date',   input.startDate)
+    .limit(1)
+  if (overlapping && overlapping.length > 0) {
+    const ov = overlapping[0] as { period_no: string; start_date: string; end_date: string }
+    throw new Error(
+      `Date range overlaps with existing period ${ov.period_no} (${ov.start_date} – ${ov.end_date}). ` +
+      'Please select a non-overlapping range.'
+    )
+  }
+
   // 1. Get next period number from DB sequence
   const { data: seqData } = await supabase.rpc('next_period_no')
   const periodNo = (seqData as string | null) ?? `PAY-${Date.now()}`
@@ -175,6 +190,10 @@ export async function apiCreatePayrollPeriod(
     emergencyContactName: r.emergency_contact_name ?? '', emergencyContactPhone: r.emergency_contact_phone ?? '',
     createdAt: r.created_at, updatedAt: r.updated_at,
   }))
+
+  if (employees.length === 0) {
+    throw new Error('No active employees found. Add at least one active employee before generating payroll.')
+  }
 
   // 3. Fetch holidays in range
   const { data: holRows } = await supabase
@@ -214,6 +233,7 @@ export async function apiCreatePayrollPeriod(
       date: r.date, timeIn: r.time_in ?? undefined, timeOut: r.time_out ?? undefined,
       status: r.status, minutesLate: r.minutes_late ?? 0,
       overtimeMinutes: r.overtime_minutes ?? 0, nightDiffMinutes: r.night_diff_minutes ?? 0,
+      undertimeMinutes: r.undertime_minutes ?? 0,
       source: r.source ?? 'kiosk',
     }))
 

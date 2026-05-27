@@ -17,12 +17,12 @@
   --color-text-muted:      #64748B;
   --color-placeholder:     #CBD5E1;
 
-  /* Brand / Accent — Indigo */
-  --color-indigo:          #4F46E5;
-  --color-indigo-hover:    #4338CA;
-  --color-indigo-active:   #3730A3;
-  --color-indigo-light:    #EEF2FF;
-  --color-indigo-medium:   #C7D2FE;
+  /* Brand / Accent — Red */
+  --color-indigo:          #DC2626;
+  --color-indigo-hover:    #B91C1C;
+  --color-indigo-active:   #991B1B;
+  --color-indigo-light:    #FEF2F2;
+  --color-indigo-medium:   #FECACA;
 
   /* Status */
   --color-success:         #059669;
@@ -34,13 +34,13 @@
   --color-info:            #0284C7;
   --color-info-bg:         #F0F9FF;
 
-  /* Sidebar — ultra dark with indigo undertone */
+  /* Sidebar — ultra dark with red undertone */
   --sidebar-bg:                   #0D0E14;
   --sidebar-width:                240px;
   --sidebar-collapsed:            64px;
   --sidebar-border:               rgba(255,255,255,0.06);
-  --sidebar-item-active-bg:       rgba(79,70,229,0.12);
-  --sidebar-item-active-border:   #4F46E5;
+  --sidebar-item-active-bg:       rgba(220,38,38,0.12);
+  --sidebar-item-active-border:   #DC2626;
   --sidebar-item-hover-bg:        rgba(255,255,255,0.05);
   --sidebar-text:                 #94A3B8;
   --sidebar-text-active:          #E2E8F0;
@@ -64,9 +64,9 @@
   --shadow-dropdown: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
 
   /* ── Legacy Aliases (keep all pages working without individual edits) ─── */
-  --brand:            #4F46E5;
-  --brand-dark:       #4338CA;
-  --brand-light:      #EEF2FF;
+  --brand:            #DC2626;
+  --brand-dark:       #B91C1C;
+  --brand-light:      #FEF2F2;
   --bg-app:           #F8FAFC;
   --bg-surface:       #FFFFFF;
   --bg-subtle:        #F1F5F9;
@@ -156,20 +156,20 @@
     font-size: 14px;
     font-weight: 500;
     letter-spacing: -0.01em;
-    background: linear-gradient(135deg, #4F46E5, #4338CA);
-    border: 1px solid #4338CA;
-    box-shadow: 0 1px 2px rgba(79,70,229,0.3);
+    background: linear-gradient(135deg, #DC2626, #B91C1C);
+    border: 1px solid #B91C1C;
+    box-shadow: 0 1px 2px rgba(220,38,38,0.3);
   }
   .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, #4338CA, #3730A3);
-    border-color: #3730A3;
-    box-shadow: 0 4px 12px rgba(79,70,229,0.4);
+    background: linear-gradient(135deg, #B91C1C, #991B1B);
+    border-color: #991B1B;
+    box-shadow: 0 4px 12px rgba(220,38,38,0.4);
     transform: translateY(-1px);
   }
   .btn-primary:active:not(:disabled) {
-    background: linear-gradient(135deg, #3730A3, #312E81);
+    background: linear-gradient(135deg, #991B1B, #7F1D1D);
     transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(79,70,229,0.3);
+    box-shadow: 0 1px 2px rgba(220,38,38,0.3);
   }
 
   .btn-secondary {

@@ -123,6 +123,7 @@ export interface AttendanceRecord {
   minutesLate: number
   overtimeMinutes: number
   nightDiffMinutes: number
+  undertimeMinutes: number
   source: 'kiosk' | 'manual'
   correctedBy?: string
   correctionReason?: string

@@ -16,10 +16,11 @@ function toRecord(r: any): AttendanceRecord {
     timeIn:           r.time_in         ?? undefined,
     timeOut:          r.time_out        ?? undefined,
     status:           r.status,
-    minutesLate:      r.minutes_late    ?? 0,
-    overtimeMinutes:  r.overtime_minutes ?? 0,
+    minutesLate:      r.minutes_late       ?? 0,
+    overtimeMinutes:  r.overtime_minutes   ?? 0,
     nightDiffMinutes: r.night_diff_minutes ?? 0,
-    source:           r.source          ?? 'kiosk',
+    undertimeMinutes: r.undertime_minutes  ?? 0,
+    source:           r.source             ?? 'kiosk',
     correctedBy:      r.corrected_by    ?? undefined,
     correctionReason: r.correction_reason ?? undefined,
     note:             r.note            ?? undefined,
@@ -139,6 +140,7 @@ export async function apiAddManualAttendance(
     minutesLate,
     overtimeMinutes:  0,
     nightDiffMinutes: 0,
+    undertimeMinutes: 0,
     source:           'manual',
     correctedBy:      by,
     correctionReason: data.reason,
@@ -209,18 +211,32 @@ async function _kioskCheckin(emp: any) {
         if (new Date() > expected) { minutesLate = Math.round((Date.now() - expected.getTime()) / 60000); status = 'late' }
       }
     }
-    await apiUpsertAttendance({ employeeId: emp.id, employeeName: emp.full_name, employeeNo: emp.employee_no, department: emp.department, date: today, timeIn: now, status, minutesLate, overtimeMinutes: 0, nightDiffMinutes: 0, source: 'kiosk' })
+    await apiUpsertAttendance({
+      employeeId: emp.id, employeeName: emp.full_name, employeeNo: emp.employee_no,
+      department: emp.department, date: today, timeIn: now, status,
+      minutesLate, overtimeMinutes: 0, nightDiffMinutes: 0, undertimeMinutes: 0, source: 'kiosk',
+    })
   } else {
-    let overtimeMinutes = 0
+    // Time-out: compute overtime and undertime vs shift schedule.
+    let overtimeMinutes = 0; let undertimeMinutes = 0
     if (emp.shift_id) {
       const { data: shift } = await supabase.from('work_shifts').select('time_out').eq('id', emp.shift_id).single()
       if (shift) {
         const [oh, om] = shift.time_out.split(':').map(Number)
         const exp = new Date(); exp.setHours(oh, om, 0, 0)
-        if (new Date() > exp) overtimeMinutes = Math.round((Date.now() - exp.getTime()) / 60000)
+        const now_ = new Date()
+        if (now_ > exp) {
+          overtimeMinutes = Math.round((now_.getTime() - exp.getTime()) / 60000)
+        } else {
+          undertimeMinutes = Math.round((exp.getTime() - now_.getTime()) / 60000)
+        }
       }
     }
-    await supabase.from('attendance_records').update({ time_out: now, overtime_minutes: overtimeMinutes }).eq('employee_id', emp.id).eq('date', today)
+    await supabase
+      .from('attendance_records')
+      .update({ time_out: now, overtime_minutes: overtimeMinutes, undertime_minutes: undertimeMinutes })
+      .eq('employee_id', emp.id)
+      .eq('date', today)
   }
 
   return { type, employee: { id: emp.id, fullName: emp.full_name, department: emp.department, position: emp.position }, message: `${emp.full_name} — ${type === 'time-in' ? 'Time In' : 'Time Out'} recorded` }

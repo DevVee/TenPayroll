@@ -6,6 +6,7 @@ import { Toaster } from '../ui/Toaster'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { PageSkeleton } from '../ui/Skeleton'
 import { useUIStore } from '../../store/uiStore'
+import { ErrorBoundary } from '../ErrorBoundary'
 
 export function AppLayout() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore()
@@ -20,9 +21,11 @@ export function AppLayout() {
         <TopBar onToggle={toggleSidebar} collapsed={sidebarCollapsed} />
         <main className="flex-1 overflow-y-auto">
           <div className="p-6 max-w-[1440px] mx-auto page-enter">
-            <Suspense fallback={<PageSkeleton />}>
-              <Outlet />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<PageSkeleton />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

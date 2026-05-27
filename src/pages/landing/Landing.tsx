@@ -18,7 +18,7 @@ function Marquee() {
       <div style={{ display: 'flex', gap: 0, animation: 'marquee 28s linear infinite', width: 'max-content' }}>
         {items.map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 28px', whiteSpace: 'nowrap' }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: i % 3 === 0 ? '#4F46E5' : i % 3 === 1 ? '#0D1B2A' : '#00AAFF', flexShrink: 0 }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: i % 3 === 0 ? '#DC2626' : i % 3 === 1 ? '#0D1B2A' : '#00AAFF', flexShrink: 0 }} />
             <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{item}</span>
           </div>
         ))}
@@ -55,7 +55,7 @@ export function Landing() {
         @keyframes floatUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         .land-btn-primary { transition: background 0.15s, transform 0.12s, box-shadow 0.15s !important; }
-        .land-btn-primary:hover { background: #1A3A8F !important; transform: translateY(-1px) !important; box-shadow: 0 8px 24px rgba(37,99,235,0.35) !important; }
+        .land-btn-primary:hover { background: #B91C1C !important; transform: translateY(-1px) !important; box-shadow: 0 8px 24px rgba(220,38,38,0.35) !important; }
         .land-btn-ghost:hover { background: #F1F5F9 !important; }
         .feat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(13,27,42,0.10) !important; }
         .feat-card { transition: transform 0.18s, box-shadow 0.18s; }
@@ -77,13 +77,13 @@ export function Landing() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {user ? (
-            <button className="land-btn-primary" onClick={() => navigate('/dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 20px', borderRadius: 8, background: '#4F46E5', color: '#fff', fontWeight: 600, fontSize: 13.5, border: 'none', cursor: 'pointer' }}>
+            <button className="land-btn-primary" onClick={() => navigate('/dashboard')} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 20px', borderRadius: 8, background: '#DC2626', color: '#fff', fontWeight: 600, fontSize: 13.5, border: 'none', cursor: 'pointer' }}>
               Dashboard <ArrowRight style={{ width: 14, height: 14 }} />
             </button>
           ) : (
             <>
               <button className="land-btn-ghost" onClick={() => navigate('/kiosk')} style={{ padding: '7px 16px', borderRadius: 7, border: 'none', background: 'transparent', color: '#6B7280', fontWeight: 500, fontSize: 13.5, cursor: 'pointer' }}>Kiosk</button>
-              <button className="land-btn-primary" onClick={() => navigate('/login')} style={{ padding: '8px 20px', borderRadius: 8, background: '#0D1B2A', color: '#fff', fontWeight: 600, fontSize: 13.5, border: 'none', cursor: 'pointer' }}>Sign in</button>
+              <button className="land-btn-primary" onClick={() => navigate('/login')} style={{ padding: '8px 20px', borderRadius: 8, background: '#DC2626', color: '#fff', fontWeight: 600, fontSize: 13.5, border: 'none', cursor: 'pointer' }}>Sign in</button>
             </>
           )}
         </div>
@@ -93,12 +93,12 @@ export function Landing() {
       <section style={{ padding: 'clamp(60px,9vw,110px) clamp(24px,6vw,80px) 0', maxWidth: 1280, margin: '0 auto' }}>
 
         {/* Label pill */}
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px 5px 8px', background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: 999, marginBottom: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#4F46E5', borderRadius: 999, padding: '2px 8px' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px 5px 8px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 999, marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: '#DC2626', borderRadius: 999, padding: '2px 8px' }}>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#fff' }} />
             <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fff', letterSpacing: '0.04em' }}>NEW</span>
           </div>
-          <span style={{ fontSize: 12.5, fontWeight: 500, color: '#4F46E5' }}>RFID card attendance · now live</span>
+          <span style={{ fontSize: 12.5, fontWeight: 500, color: '#DC2626' }}>RFID card attendance · now live</span>
         </div>
 
         {/* Headline — very editorial */}
@@ -109,7 +109,7 @@ export function Landing() {
           maxWidth: 820, marginBottom: 0,
         }}>
           HR &amp; Payroll<br />
-          <span style={{ color: '#4F46E5' }}>built right</span>{' '}
+          <span style={{ color: '#DC2626' }}>built right</span>{' '}
           <span style={{ color: '#9CA3AF', fontWeight: 300, fontStyle: 'italic' }}>for the</span><br />
           Philippines.
         </h1>
@@ -122,7 +122,7 @@ export function Landing() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, flexShrink: 0 }}>
             <button className="land-btn-primary" onClick={() => navigate(user ? '/dashboard' : '/login')} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '13px 26px',
-              borderRadius: 9, background: '#4F46E5', color: '#fff',
+              borderRadius: 9, background: '#DC2626', color: '#fff',
               fontWeight: 700, fontSize: 15, border: 'none', cursor: 'pointer',
             }}>
               {user ? 'Go to Dashboard' : 'Sign in'} <ArrowRight style={{ width: 15, height: 15 }} />

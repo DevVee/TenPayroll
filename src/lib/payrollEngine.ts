@@ -109,7 +109,7 @@ export function computePayrollEntry(input: ComputeInput): PayrollEntry {
 
   // ── Tally attendance ─────────────────────────────────────────────────────
   let presentDays = 0, absentDays = 0, lateDays = 0, halfDays = 0, leaveDays = 0
-  let totalMinLate = 0, totalOTMin = 0, totalNDMin = 0
+  let totalMinLate = 0, totalOTMin = 0, totalNDMin = 0, totalUTMin = 0
   let regHolDays = 0, spHolDays = 0
 
   for (const r of attendanceRecords) {
@@ -120,6 +120,7 @@ export function computePayrollEntry(input: ComputeInput): PayrollEntry {
     else if (r.status === 'on-leave') { leaveDays++ }
     totalOTMin += r.overtimeMinutes
     totalNDMin += r.nightDiffMinutes
+    totalUTMin += r.undertimeMinutes
     if (regHolSet.has(r.date)) regHolDays++
     if (spHolSet.has(r.date))  spHolDays++
   }
@@ -183,8 +184,11 @@ export function computePayrollEntry(input: ComputeInput): PayrollEntry {
     ? r2(daily * absentDays)
     : 0
 
-  // Undertime: if enabled, deduct based on minutes worked less than shift (approximated from OT info)
-  const undertimeDeductions = 0  // placeholder — requires timeOut vs shift end tracking
+  // Undertime: deduct for minutes left early, using the same per-minute rate as late deductions.
+  // undertimeMinutes is recorded at kiosk clock-out time (shift.timeOut vs actual timeOut).
+  const undertimeDeductions = ds.undertimeDeductionEnabled
+    ? r2((hourly / 60) * totalUTMin * ds.undertimeDeductionMultiplier)
+    : 0
 
   const totalDeductions = r2(
     lateDeductions + absenceDeductions + undertimeDeductions +
@@ -192,7 +196,8 @@ export function computePayrollEntry(input: ComputeInput): PayrollEntry {
     withholdingTax +
     additionalDeductions.reduce((s, d) => s + d.amount, 0)
   )
-  const netPay = r2(grossPay - totalDeductions)
+  // Net pay is floored at 0 — mandatory deductions cannot create a debt to the employer.
+  const netPay = Math.max(0, r2(grossPay - totalDeductions))
 
   return {
     id: `pe-${payrollPeriodId}-${employee.id}`,
