@@ -16,7 +16,7 @@ function createWindow(): void {
     frame: false,
     resizable: false,
     autoHideMenuBar: true,
-    title: 'Veltrix Kiosk',
+    title: 'TenPayroll Kiosk',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -38,7 +38,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('app.veltrix.kiosk')
+  electronApp.setAppUserModelId('app.tenpayroll.kiosk')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

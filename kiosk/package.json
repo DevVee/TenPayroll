@@ -2,21 +2,22 @@
   "name": "tenpayroll-kiosk",
   "version": "1.0.0",
   "description": "TenPayroll — Offline-capable attendance kiosk (Electron + SQLite + Supabase sync)",
-  "main": "dist-electron/main/index.js",
+  "main": "out/main/index.js",
   "scripts": {
-    "dev":     "electron-vite dev",
-    "build":   "electron-vite build",
-    "pack":    "npm run build && electron-builder",
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "pack": "npm run build && electron-builder",
     "preview": "electron-vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^12.10.0",
     "electron-updater": "^6.1.7",
     "uuid": "^11.0.0"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.0",
+    "@electron-toolkit/tsconfig": "^2.0.0",
     "@electron-toolkit/utils": "^3.0.0",
     "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^22.0.0",
@@ -40,7 +41,27 @@
   "build": {
     "appId": "app.tenpayroll.kiosk",
     "productName": "TenPayroll Kiosk",
-    "directories": { "buildResources": "resources" },
+    "directories": {
+      "buildResources": "resources",
+      "output": "dist"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "out/main/**",
+      "**/node_modules/better-sqlite3/**",
+      "**/node_modules/bindings/**",
+      "**/node_modules/file-uri-to-path/**"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/better-sqlite3/build/Release",
+        "to": "native",
+        "filter": ["**/*.node"]
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "resources/icon.ico"
