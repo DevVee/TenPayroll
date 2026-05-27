@@ -465,7 +465,7 @@ export function Landing() {
         </div>
         <p style={{ fontSize: 11.5, color: '#374151' }}>© {new Date().getFullYear()} Veltrix · Built for Filipino businesses</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 18px' }}>
-          {['🇵🇭 PH Compliant', 'SSS 2024', 'PhilHealth 5%', 'BIR TRAIN Law'].map(t => (
+          {['PH Compliant', 'SSS 2024', 'PhilHealth 5%', 'BIR TRAIN Law'].map(t => (
             <span key={t} style={{ fontSize: 11.5, color: '#374151', fontWeight: 500 }}>{t}</span>
           ))}
         </div>

@@ -223,7 +223,7 @@ export function Dashboard() {
             className="font-bold text-gray-900 leading-tight"
             style={{ fontSize: 22, letterSpacing: '-0.025em' }}
           >
-            {greeting}, {firstName}! 👋
+            {greeting}, {firstName}!
           </h1>
           <p style={{ fontSize: 13, color: '#9CA3AF', marginTop: 3 }}>
             Here's what's happening in your organization today.

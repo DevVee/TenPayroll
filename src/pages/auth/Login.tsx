@@ -331,7 +331,7 @@ export function Login() {
               All data is stored locally in your browser — nothing is sent to a server.
             </p>
             <p style={{ fontSize: 11.5, color: '#D1D5DB' }}>
-              © {new Date().getFullYear()} Veltrix · 🇵🇭 Built for Filipino businesses
+              © {new Date().getFullYear()} Veltrix · Built for Filipino businesses
             </p>
           </div>
         </div>

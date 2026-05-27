@@ -507,11 +507,11 @@ function PayrollTab() {
           <SectionHeader>Withholding Tax Reference (BIR TRAIN Law 2023+)</SectionHeader>
           <p className="text-xs text-gray-400">These brackets are automatically applied per law and cannot be manually overridden.</p>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="table-base w-full text-xs">
               <thead>
-                <tr style={{ background:'#F9FAFB' }}>
-                  <th className="px-3 py-1.5 text-left font-bold text-gray-500">Monthly Taxable Income</th>
-                  <th className="px-3 py-1.5 text-left font-bold text-gray-500">Rate</th>
+                <tr>
+                  <th>Monthly Taxable Income</th>
+                  <th>Rate</th>
                 </tr>
               </thead>
               <tbody>
@@ -523,7 +523,7 @@ function PayrollTab() {
                   ['₱166,667 – ₱666,666','₱40,833.33 + 32% of excess over ₱166,667'],
                   ['> ₱666,667','₱200,833.33 + 35% of excess over ₱666,667'],
                 ].map(([range, rate]) => (
-                  <tr key={range} className="border-t" style={{ borderColor:'#F3F4F6' }}>
+                  <tr key={range}>
                     <td className="px-3 py-1.5 text-gray-700 tabular-nums">{range}</td>
                     <td className="px-3 py-1.5 text-gray-600">{rate}</td>
                   </tr>

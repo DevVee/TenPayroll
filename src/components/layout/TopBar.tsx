@@ -1,4 +1,4 @@
-import { Menu, LogOut, Monitor, ChevronDown, Search } from 'lucide-react'
+import { Menu, LogOut, Monitor, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -95,41 +95,8 @@ export function TopBar({ onToggle }: { onToggle: () => void; collapsed?: boolean
         </span>
       </div>
 
-      {/* ── Search bar (centre/right) ── */}
+      {/* ── Right controls ── */}
       <div className="flex-1 flex justify-end items-center gap-2 min-w-0">
-        <div
-          className="hidden md:flex items-center gap-2"
-          style={{
-            height: 34,
-            padding: '0 12px',
-            background: '#F9FAFB',
-            border: '1px solid #E4E7EC',
-            borderRadius: 8,
-            width: 240,
-            cursor: 'text',
-          }}
-        >
-          <Search style={{ width: 13, height: 13, color: '#9CA3AF', flexShrink: 0 }} />
-          <span style={{ fontSize: 12.5, color: '#B0B8C8', flex: 1, userSelect: 'none' }}>
-            Search anything…
-          </span>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              padding: '1px 5px',
-              background: '#EDF0F5',
-              borderRadius: 4,
-              fontSize: 10,
-              fontWeight: 600,
-              color: '#9CA3AF',
-              flexShrink: 0,
-            }}
-          >
-            ⌘K
-          </div>
-        </div>
 
         {/* ── Kiosk shortcut ── */}
         <button

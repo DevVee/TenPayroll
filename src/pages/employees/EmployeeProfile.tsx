@@ -201,11 +201,11 @@ export function EmployeeProfile() {
           {att.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-400">No attendance records found</div>
           ) : (
-            <table className="w-full">
+            <table className="table-base w-full">
               <thead>
-                <tr style={{ background:'#F9FAFB', borderBottom:'1px solid #F3F4F6' }}>
+                <tr>
                   {['Date','Time In','Time Out','Hours','Late','Status'].map(h => (
-                    <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -215,7 +215,7 @@ export function EmployeeProfile() {
                     ? ((new Date(a.timeOut).getTime() - new Date(a.timeIn).getTime()) / 3600000).toFixed(1)
                     : '—'
                   return (
-                    <tr key={a.id} className="border-b last:border-0 hover:bg-gray-50" style={{ borderColor:'#F3F4F6' }}>
+                    <tr key={a.id}>
                       <td className="px-5 py-2.5 text-sm text-gray-700 font-medium tabular-nums">{a.date}</td>
                       <td className="px-5 py-2.5 text-sm text-gray-600 tabular-nums">
                         {a.timeIn ? new Date(a.timeIn).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit',hour12:true}) : '—'}
@@ -252,11 +252,11 @@ export function EmployeeProfile() {
               {entriesLoaded ? 'No payroll records found' : 'Loading…'}
             </div>
           ) : (
-            <table className="w-full">
+            <table className="table-base w-full">
               <thead>
-                <tr style={{ background:'#F9FAFB', borderBottom:'1px solid #F3F4F6' }}>
+                <tr>
                   {['Period','Gross Pay','Deductions','Net Pay',''].map(h => (
-                    <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -264,7 +264,7 @@ export function EmployeeProfile() {
                 {payrollEntries.map(pe => {
                   const period = periods?.find(p => p.id === pe.payrollPeriodId)
                   return (
-                    <tr key={pe.id} className="border-b last:border-0 hover:bg-gray-50" style={{ borderColor:'#F3F4F6' }}>
+                    <tr key={pe.id}>
                       <td className="px-5 py-2.5">
                         <p className="text-sm font-semibold text-gray-800">{period?.periodNo ?? '—'}</p>
                         <p className="text-xs text-gray-400">{period?.startDate} – {period?.endDate}</p>
@@ -294,17 +294,17 @@ export function EmployeeProfile() {
           {lv.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-400">No leave records found</div>
           ) : (
-            <table className="w-full">
+            <table className="table-base w-full">
               <thead>
-                <tr style={{ background:'#F9FAFB', borderBottom:'1px solid #F3F4F6' }}>
+                <tr>
                   {['Type','Start','End','Days','Reason','Status'].map(h => (
-                    <th key={h} className="px-5 py-2.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                    <th key={h}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {lv.map(l => (
-                  <tr key={l.id} className="border-b last:border-0 hover:bg-gray-50" style={{ borderColor:'#F3F4F6' }}>
+                  <tr key={l.id}>
                     <td className="px-5 py-2.5 text-sm capitalize font-medium text-gray-700">{l.leaveType}</td>
                     <td className="px-5 py-2.5 text-sm text-gray-600 tabular-nums">{l.startDate}</td>
                     <td className="px-5 py-2.5 text-sm text-gray-600 tabular-nums">{l.endDate}</td>
