@@ -136,6 +136,45 @@ supabase/
 
 ---
 
+## Kiosk (Electron — Attendance Terminal)
+
+The `kiosk/` folder is a separate Electron app designed for a dedicated touchscreen PC at the office entrance.
+
+### What the end user does
+
+1. Download `TenPayroll-Kiosk-Setup.exe` from the [latest GitHub Release](https://github.com/DevVee/TenPayroll/releases/latest)
+2. Double-click → Next → Install → Finish
+3. The kiosk opens fullscreen automatically on every boot
+
+No Node.js, no command line, no technical knowledge required.
+
+### How to release a new kiosk build
+
+```bash
+# Bump the version in kiosk/package.json, then:
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+GitHub Actions (`kiosk-release.yml`) builds the Windows installer automatically and attaches it to a GitHub Release. Takes ~5 minutes.
+
+### Required GitHub Secrets (set once in Settings → Secrets → Actions)
+
+| Secret | Where to find it |
+|---|---|
+| `KIOSK_SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `KIOSK_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon/public key |
+
+These are baked into the installer at build time — the kiosk machine needs no environment configuration.
+
+### Offline behaviour
+
+- Check-ins are always saved locally (SQLite) — works with no internet
+- Syncs to Supabase automatically every 30 s when online
+- Employee list is cached locally; tap **Refresh** on the idle screen to pull updates
+
+---
+
 ## License
 
 Private — Ten Foundation Philippines Inc. All rights reserved.
