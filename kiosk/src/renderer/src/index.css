@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Root ─────────────────────────────────────────────────────────────────── */
+html, body, #root {
+  height: 100%;
+  width:  100%;
+  overflow: hidden;
+  background: #0F172A;
+  color: #F8FAFC;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ─── Kiosk hardening: no selection, no context menus, no drag ─────────────── */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-app-region: no-drag;
+  /* Kill ALL CSS animations and transitions globally */
+  animation-duration:        0s !important;
+  animation-delay:           0s !important;
+  transition-duration:       0s !important;
+  transition-delay:          0s !important;
+}
+
+/* Allow hover color transitions on interactive elements — sub-100 ms, imperceptible */
+button, a {
+  transition-duration: 80ms !important;
+  transition-property: color, background-color, border-color, opacity !important;
+}
+
+/* ─── Scrollbars — hidden for kiosk aesthetic ─────────────────────────────── */
+::-webkit-scrollbar { display: none; }
+*                   { scrollbar-width: none; }
+
+/* ─── Cursor ──────────────────────────────────────────────────────────────── */
+/* Hide mouse cursor in production kiosk; remove this line in dev if needed */
+/* body { cursor: none; } */
